@@ -1,7 +1,6 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
 import plotly.graph_objects as go
 from google import genai
 
@@ -24,25 +23,38 @@ interval_map = {"Harian (1d)": "1d", "Mingguan (1wk)": "1wk", "Bulanan (1mo)": "
 selected_interval = interval_map[timeframe_option]
 
 # 3. FUNGSI MENGAMBIL DATA EMAS DUNIA & ESTIMASI ANTAM
-@st.cache_data(ttl=3600) # Cache data selama 1 jam agar tidak lelet
+@st.cache_data(ttl=3600)
 def get_gold_data(interval):
-    # Mengambil data Emas Dunia (Ticker GC=F)
     gold = yf.Ticker("GC=F")
-    # Tarik data 2 tahun terakhir agar indikator teknikal bisa dihitung akurat
     df = gold.history(period="2y", interval=interval) 
     
     if df.empty:
         return df
 
-    # Estimasi Harga ANTAM (Asumsi: 1 Troy Ounce = 31.103 gram, Kurs USD = Rp 15.500)
-    # Catatan: Ini adalah estimasi untuk MVP. ANTAM asli butuh scraping web khusus.
+    # Estimasi Harga ANTAM
     df['Close_Antam_IDR'] = (df['Close'] / 31.103) * 15500 
     
-    # 4. KALKULASI INDIKATOR TEKNIKAL MENGGUNAKAN PANDAS-TA
-    df.ta.macd(append=True)
-    df.ta.rsi(length=14, append=True)
-    df.ta.sma(length=20, append=True) # Moving Average 20 periode
-    df.ta.sma(length=50, append=True) # Moving Average 50 periode
+    # --- KALKULASI INDIKATOR MANUAL (TANPA PANDAS-TA) ---
+    
+    # 1. Simple Moving Average (SMA)
+    df['SMA_20'] = df['Close'].rolling(window=20).mean()
+    df['SMA_50'] = df['Close'].rolling(window=50).mean()
+    
+    # 2. MACD (Moving Average Convergence Divergence)
+    ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD_12_26_9'] = ema_12 - ema_26
+    
+    # 3. RSI (Relative Strength Index)
+    delta = df['Close'].diff()
+    gain = delta.clip(lower=0)
+    loss = -1 * delta.clip(upper=0)
+    
+    avg_gain = gain.ewm(com=13, adjust=False).mean()
+    avg_loss = loss.ewm(com=13, adjust=False).mean()
+    
+    rs = avg_gain / avg_loss
+    df['RSI_14'] = 100 - (100 / (1 + rs))
     
     return df.dropna()
 
