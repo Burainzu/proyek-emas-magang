@@ -1,6 +1,7 @@
-streamlit
+streamlit==1.32.0
 yfinance
 pandas
 pandas-ta
 plotly
 google-genai
+numpy<2.0.0
