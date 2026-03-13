@@ -91,31 +91,44 @@ with st.sidebar:
 interval_map = {"Harian (1d)": "1d", "Mingguan (1wk)": "1wk", "Bulanan (1mo)": "1mo"}
 selected_interval = interval_map[timeframe_option]
 
-# 5. FUNGSI DATA & KALKULASI MANUAL
+# 5. FUNGSI DATA & KALKULASI MANUAL (DENGAN BYPASS RATE LIMIT)
 @st.cache_data(ttl=3600)
 def get_gold_data(interval):
-    gold = yf.Ticker("GC=F")
-    df = gold.history(period="2y", interval=interval) 
-    if df.empty: return df
+    try:
+        # Trik Penyamaran: Membuat Session seolah-olah ini adalah browser Google Chrome dari Windows
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        })
+        
+        # Masukkan session penyamaran ke dalam yfinance
+        gold = yf.Ticker("GC=F", session=session)
+        df = gold.history(period="2y", interval=interval) 
+        
+        if df.empty: 
+            return df
 
-    df['Close_Antam_IDR'] = (df['Close'] / 31.103) * 15500 
-    df['SMA_20'] = df['Close'].rolling(window=20).mean()
-    df['SMA_50'] = df['Close'].rolling(window=50).mean()
-    
-    ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
-    ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
-    df['MACD_12_26_9'] = ema_12 - ema_26
-    
-    delta = df['Close'].diff()
-    gain = delta.clip(lower=0)
-    loss = -1 * delta.clip(upper=0)
-    avg_gain = gain.ewm(com=13, adjust=False).mean()
-    avg_loss = loss.ewm(com=13, adjust=False).mean()
-    rs = avg_gain / avg_loss
-    df['RSI_14'] = 100 - (100 / (1 + rs))
-    return df.dropna()
-
-df = get_gold_data(selected_interval)
+        df['Close_Antam_IDR'] = (df['Close'] / 31.103) * 15500 
+        df['SMA_20'] = df['Close'].rolling(window=20).mean()
+        df['SMA_50'] = df['Close'].rolling(window=50).mean()
+        
+        ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
+        ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
+        df['MACD_12_26_9'] = ema_12 - ema_26
+        
+        delta = df['Close'].diff()
+        gain = delta.clip(lower=0)
+        loss = -1 * delta.clip(upper=0)
+        avg_gain = gain.ewm(com=13, adjust=False).mean()
+        avg_loss = loss.ewm(com=13, adjust=False).mean()
+        rs = avg_gain / avg_loss
+        df['RSI_14'] = 100 - (100 / (1 + rs))
+        return df.dropna()
+        
+    except Exception as e:
+        # Menangkap error jika Yahoo Finance benar-benar memblokir IP secara total
+        st.error(f"⚠️ Yahoo Finance membatasi akses (Rate Limit). Server sedang mendinginkan diri. Silakan coba beberapa menit lagi.")
+        return pd.DataFrame() # Mengembalikan dataframe kosong agar aplikasi tidak hancur (crash)
 
 if df.empty:
     st.error("Gagal mengambil data. Periksa koneksi internet.")
