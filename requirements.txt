@@ -1,6 +1,6 @@
 streamlit
 yfinance
-pandas<2.2.0
+pandas
 pandas-ta
 plotly
 google-genai
