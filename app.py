@@ -130,6 +130,8 @@ def get_gold_data(interval):
         st.error(f"⚠️ Yahoo Finance membatasi akses (Rate Limit). Server sedang mendinginkan diri. Silakan coba beberapa menit lagi.")
         return pd.DataFrame() # Mengembalikan dataframe kosong agar aplikasi tidak hancur (crash)
 
+# Tambahkan baris ini untuk memanggil fungsi dan menyimpan datanya ke dalam variabel 'df'
+df = get_gold_data(selected_interval)
 if df.empty:
     st.error("Gagal mengambil data. Periksa koneksi internet.")
 else:
