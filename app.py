@@ -10,32 +10,46 @@ from bs4 import BeautifulSoup
 # 1. KONFIGURASI HALAMAN (Ikon Bank)
 st.set_page_config(page_title="BSI Gold Analytics", page_icon="🏦", layout="wide")
 
-# 2. INJEKSI CUSTOM CSS (TEMA BANK BSI)
+# 2. INJEKSI CUSTOM CSS (TEMA BANK BSI PREMIUM)
 st.markdown("""
 <style>
-    /* Warna Utama BSI: Tosca (#00A39E) dan Oranye (#F26522) */
+    /* --- MENGUBAH BACKGROUND UTAMA & SIDEBAR --- */
+    /* Background area utama aplikasi */
+    .stApp {
+        background-color: #06121E !important; /* Warna Navy sangat gelap eksklusif */
+        /* Jika ingin pakai gambar background tipis, hapus // di bawah ini dan masukkan URL gambar */
+        /* background-image: url("URL_GAMBAR_PATTERN_BSI_DI_SINI"); */
+        /* background-size: cover; */
+    }
     
+    /* Background area Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #0A1929 !important; /* Navy sedikit lebih terang untuk sidebar */
+        border-right: 1px solid #00A39E; /* Garis batas Tosca BSI */
+    }
+
+    /* --- WARNA TEKS & ELEMEN LAINNYA --- */
     /* Judul Utama */
     h1 { color: #00A39E !important; font-weight: 800; letter-spacing: -1px; }
     h2, h3 { color: #E2E8F0 !important; }
     
     /* Kartu Metrik Atas */
     div[data-testid="metric-container"] {
-        background-color: #1E293B; /* Background gelap elegan */
-        border: 1px solid #334155;
+        background-color: #112236; /* Background kartu disesuaikan */
+        border: 1px solid #1E3A5F;
         padding: 15px 20px;
         border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         transition: transform 0.2s, border-color 0.2s;
     }
     div[data-testid="metric-container"]:hover {
         transform: translateY(-5px);
-        border-color: #00A39E; /* Border Tosca BSI saat di-hover */
+        border-color: #F26522; /* Border Oranye BSI saat di-hover */
     }
     
     /* Kartu Analisis AI */
     .ai-card {
-        background-color: #0F172A;
+        background-color: #0A1929;
         border: 1px solid #00A39E; /* Border Tosca BSI */
         padding: 20px;
         border-radius: 10px;
@@ -47,7 +61,7 @@ st.markdown("""
         margin-top: 0; 
         margin-bottom: 15px; 
         font-size: 18px; 
-        border-bottom: 1px solid #1E293B; 
+        border-bottom: 1px solid #1E3A5F; 
         padding-bottom: 10px;
     }
     .ai-card p { color: #CBD5E1; font-size: 14px; line-height: 1.6; }
@@ -68,6 +82,9 @@ st.markdown("""
         transform: scale(1.02);
         box-shadow: 0 6px 20px rgba(242, 101, 34, 0.5);
     }
+    
+    /* Menghilangkan background abu-abu default dari block code */
+    pre { background-color: transparent !important; }
 </style>
 """, unsafe_allow_html=True)
 
