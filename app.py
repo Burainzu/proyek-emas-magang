@@ -6,91 +6,48 @@ from google import genai
 import json
 import requests
 from bs4 import BeautifulSoup
+import re
+import streamlit.components.v1 as components
 
-# 1. KONFIGURASI HALAMAN (Ikon Bank)
+# 1. KONFIGURASI HALAMAN
 st.set_page_config(page_title="BSI Gold Analytics", page_icon="🏦", layout="wide")
 
 # 2. INJEKSI CUSTOM CSS (TEMA BANK BSI PREMIUM GRADIENT)
 st.markdown("""
 <style>
-    /* --- MENGUBAH BACKGROUND UTAMA & SIDEBAR MENJADI GRADIENT BSI --- */
-    
-    /* Background area utama aplikasi (Gradient Navy ke Dark Tosca BSI) */
     .stApp {
         background: linear-gradient(135deg, #06121E 0%, #004D4A 100%) !important;
-        background-attachment: fixed !important; /* Menjaga gradient tetap mulus saat di-scroll */
+        background-attachment: fixed !important; 
     }
-    
-    /* Background area Sidebar (Gradient Navy ke Deep Tosca) */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0A1929 0%, #00312F 100%) !important;
-        border-right: 1px solid #00A39E; /* Garis batas Tosca BSI */
+        border-right: 1px solid #00A39E; 
     }
-
-    /* Membuat header atas Streamlit transparan agar menyatu dengan gradient */
-    header[data-testid="stHeader"] {
-        background-color: transparent !important;
-    }
-
-    /* --- WARNA TEKS & ELEMEN LAINNYA --- */
-    /* Judul Utama */
+    header[data-testid="stHeader"] { background-color: transparent !important; }
     h1 { color: #00A39E !important; font-weight: 800; letter-spacing: -1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
     h2, h3 { color: #E2E8F0 !important; }
-    
-    /* Kartu Metrik Atas (Dibuat agak transparan/Glassmorphism agar gradient terlihat) */
     div[data-testid="metric-container"] {
         background: rgba(17, 34, 54, 0.7) !important; 
-        backdrop-filter: blur(10px); /* Efek kaca kekinian */
-        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 163, 158, 0.3);
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         transition: transform 0.2s, border-color 0.2s;
     }
     div[data-testid="metric-container"]:hover {
-        transform: translateY(-5px);
-        border-color: #F26522; /* Border Oranye BSI saat di-hover */
-        background: rgba(17, 34, 54, 0.9) !important;
+        transform: translateY(-5px); border-color: #F26522; background: rgba(17, 34, 54, 0.9) !important;
     }
-    
-    /* Kartu Analisis AI (Glassmorphism) */
     .ai-card {
-        background: rgba(10, 25, 41, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid #00A39E; /* Border Tosca BSI */
-        padding: 20px;
-        border-radius: 10px;
-        height: 100%;
-        box-shadow: 0 4px 15px rgba(0, 163, 158, 0.15);
+        background: rgba(10, 25, 41, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border: 1px solid #00A39E; padding: 20px; border-radius: 10px; height: 100%; box-shadow: 0 4px 15px rgba(0, 163, 158, 0.15);
     }
-    .ai-card h4 { 
-        color: #F26522; /* Judul sub-kartu Oranye BSI */
-        margin-top: 0; 
-        margin-bottom: 15px; 
-        font-size: 18px; 
-        border-bottom: 1px solid rgba(0, 163, 158, 0.3); 
-        padding-bottom: 10px;
-    }
+    .ai-card h4 { color: #F26522; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid rgba(0, 163, 158, 0.3); padding-bottom: 10px; }
     .ai-card p { color: #CBD5E1; font-size: 14px; line-height: 1.6; }
-    
-    /* Tombol Generate AI - Gradien Oranye BSI */
     div.stButton > button:first-child {
-        background: linear-gradient(90deg, #F26522 0%, #F7941D 100%);
-        color: #FFFFFF;
-        font-weight: bold;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 24px;
-        width: 100%;
-        box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3);
-        transition: all 0.3s ease;
+        background: linear-gradient(90deg, #F26522 0%, #F7941D 100%); color: #FFFFFF; font-weight: bold; border: none; border-radius: 8px;
+        padding: 12px 24px; width: 100%; box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3); transition: all 0.3s ease;
     }
-    div.stButton > button:first-child:hover {
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(242, 101, 34, 0.6);
-    }
+    div.stButton > button:first-child:hover { transform: scale(1.02); box-shadow: 0 6px 20px rgba(242, 101, 34, 0.6); }
+    pre { background-color: transparent !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -98,7 +55,7 @@ st.title("🏦 BSI Gold Analytics & Prediction")
 st.markdown("*Platform Analisis Harga Emas Dunia & ANTAM Berbasis Artificial Intelligence*")
 st.markdown("---")
 
-# 3. FUNGSI MENGAMBIL BERITA (SCRAPING)
+# 3. FUNGSI MENGAMBIL BERITA
 @st.cache_data(ttl=3600)
 def get_market_news():
     try:
@@ -114,63 +71,39 @@ def get_market_news():
             if title and len(title) > 10: news_list.append(title)
         if not news_list: return ["Berita harian sedang diperbarui oleh sistem.", "Sentimen pasar hari ini berfokus pada kebijakan suku bunga."]
         return news_list
-    except Exception as e:
+    except:
         return ["Gagal menarik berita langsung. Server sedang sibuk.", "Gunakan analisis teknikal sebagai acuan utama hari ini."]
 
-# FUNGSI MENGAMBIL HARGA ASLI ANTAM DENGAN FALLBACK ESTIMASI
+# FUNGSI MENGAMBIL HARGA ASLI ANTAM (DENGAN FLAG SUCCESS/FAIL)
 @st.cache_data(ttl=3600)
-def get_harga_antam_asli(estimasi_cadangan):
+def get_harga_antam_asli():
     url = "https://www.logammulia.com/id/harga-emas-hari-ini"
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=5)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Mencari tabel harga sesuai kodemu
         table = soup.find('table', class_='table-price')
         if table:
             first_row = table.find_all('tr')[1] 
             cols = first_row.find_all('td')
             harga_beli_str = cols[1].text.strip()
-            
-            # Membersihkan teks "Rp 1.250.000" menjadi angka murni 1250000
-            import re
             harga_bersih = int(re.sub(r'[^0-9]', '', harga_beli_str))
-            
-            return harga_bersih, "Harga Asli ANTAM"
-            
-    except Exception as e:
-        pass # Abaikan error jika diblokir, lanjut ke return bawah
-        
-    # Jika web scraping gagal/diblokir, kembalikan nilai estimasi cadangan
-    return estimasi_cadangan, "Harga Estimasi Sistem"
+            return harga_bersih, True # True berarti Sukses Scraping
+    except:
+        pass
+    return None, False # False berarti Gagal/Diblokir
 
-# 4. SIDEBAR PENGATURAN
+# 4. SIDEBAR PENGATURAN AWAL
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bank_Syariah_Indonesia.svg/1024px-Bank_Syariah_Indonesia.svg.png", width=150)
     st.markdown("### ⚙️ Konfigurasi Mesin")
     api_key = st.text_input("🔐 Gemini API Key", type="password")
-    
-    st.markdown("### 📊 Parameter Chart")
     timeframe_option = st.selectbox("Pilih Time Frame Data:", ("Harian (1d)", "Mingguan (1wk)", "Bulanan (1mo)"))
-
-    # --- FITUR BARU: MINI CONTENT WEB LOGAM MULIA ---
-    st.markdown("---")
-    st.markdown("### 🥇 Live Web Logam Mulia")
-    
-    # Memanggil modul components bawaan Streamlit untuk iFrame
-    import streamlit.components.v1 as components
-    
-    # Membuat box iframe dengan tinggi 400px dan bisa di-scroll
-    components.iframe("https://www.logammulia.com/id/grafik-harga-emas", height=400, scrolling=True)
-    
-    # Tombol cadangan jika iFrame diblokir oleh sistem keamanan Logam Mulia
-    st.markdown("<div style='text-align: center; margin-top: 10px;'><a href='https://www.logammulia.com/id/grafik-harga-emas' target='_blank' style='text-decoration: none; color: #F26522; font-size: 13px; font-weight: bold;'>🔗 Cek harga emas ANTAM secara LIVE!</a></div>", unsafe_allow_html=True)
 
 interval_map = {"Harian (1d)": "1d", "Mingguan (1wk)": "1wk", "Bulanan (1mo)": "1mo"}
 selected_interval = interval_map[timeframe_option]
 
-# 5. FUNGSI DATA & KALKULASI MANUAL (DENGAN FALLBACK)
+# 5. FUNGSI DATA & KALKULASI MANUAL
 @st.cache_data(ttl=3600)
 def get_gold_data(interval):
     df = pd.DataFrame()
@@ -211,10 +144,36 @@ if df.empty:
     st.error("🚨 Yahoo Finance memblokir IP Streamlit Cloud. Jalankan aplikasi ini secara lokal untuk presentasi.")
 else:
     latest_data = df.iloc[-1]
+    estimasi_harga = int(latest_data['Close_Antam_IDR'])
     
-    # --- MENJALANKAN FUNGSI HARGA ASLI ---
-    estimasi_harga = latest_data['Close_Antam_IDR']
-    harga_antam_final, status_harga = get_harga_antam_asli(estimasi_harga)
+    # MENGECEK STATUS SCRAPING WEB ANTAM
+    harga_scrape, is_success = get_harga_antam_asli()
+    
+    # --- LOGIKA FALLBACK INPUT MANUAL DI SIDEBAR ---
+    with st.sidebar:
+        st.markdown("---")
+        if is_success:
+            st.success("✅ Terhubung ke Server Logam Mulia")
+            harga_antam_final = harga_scrape
+            status_harga = "Harga Asli Otomatis"
+        else:
+            st.warning("⚠️ Otomasi ke Logam Mulia Terhalang.")
+            st.markdown("### ✍️ Input Manual Harga ANTAM")
+            # Fitur Form Input Manual untuk user dengan default nilai estimasi sistem
+            harga_antam_final = st.number_input(
+                "Masukkan Harga 1 Gram Hari Ini (Rp):", 
+                min_value=0, 
+                value=estimasi_harga, 
+                step=1000,
+                help="Lihat harga asli di grafik bawah lalu ketikkan di sini. AI akan memakai angka ini."
+            )
+            status_harga = "Harga Input Manual"
+            
+        # Fitur Mini Web Logam Mulia diposisikan paling bawah
+        st.markdown("---")
+        st.markdown("### 🥇 Live Web Logam Mulia")
+        components.iframe("https://www.logammulia.com/id/grafik-harga-emas", height=400, scrolling=True)
+        st.markdown("<div style='text-align: center; margin-top: 10px;'><a href='https://www.logammulia.com/id/grafik-harga-emas' target='_blank' style='text-decoration: none; color: #F26522; font-size: 13px; font-weight: bold;'>🔗 Buka Full Layar di Tab Baru</a></div>", unsafe_allow_html=True)
     
     # Menampilkan Berita Market
     st.info("📰 **Kilas Berita Pasar Hari Ini:**")
@@ -222,20 +181,24 @@ else:
     for b in berita: st.markdown(f"- {b}")
     st.markdown("---")
     
-    # KARTU METRIK
+    # KARTU METRIK DI LAYAR UTAMA
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.metric("XAU/USD (Dunia)", f"${latest_data['Close']:,.2f}")
-    with col2: st.metric(f"ANTAM ({status_harga})", f"Rp {harga_antam_final:,.0f}") # Labelnya akan berubah dinamis
+    with col2: st.metric(f"ANTAM ({status_harga})", f"Rp {harga_antam_final:,.0f}")
     with col3: st.metric("RSI (14)", f"{latest_data['RSI_14']:.2f}")
     with col4: st.metric("MACD Momentum", f"{latest_data['MACD_12_26_9']:.2f}")
 
-    # CHART PLOTLY DENGAN WARNA BSI
+    # CHART PLOTLY
     st.subheader("📈 Analisis Pergerakan Harga")
-    # ... (Biarkan kode grafik figure Plotly tetap seperti milikmu) ...
+    fig = go.Figure()
+    fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='XAU/USD'))
+    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], mode='lines', name='SMA 20 (Cepat)', line=dict(color='#00A39E', width=2))) 
+    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_50'], mode='lines', name='SMA 50 (Lambat)', line=dict(color='#F26522', width=2))) 
+    fig.update_layout(xaxis_rangeslider_visible=False, height=450, template="plotly_dark", margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig, use_container_width=True)
 
-    # --- DI BAGIAN BAWAH, UPDATE PROMPT AI ---
+    # INTEGRASI AI
     st.markdown("---")
-    
     if st.button("Generate Analisis AI & Sinyal Trading (BSI-Mode)"):
         if not api_key:
             st.warning("⚠️ Masukkan API Key di pengaturan Sidebar sebelah kiri.")
@@ -247,7 +210,7 @@ else:
                     Anda adalah analis kuantitatif senior di Bank Syariah Indonesia. Evaluasi data Emas ini:
                     Harga Dunia: ${latest_data['Close']:.2f}, Harga ANTAM: Rp {harga_antam_final:,.0f}, RSI: {latest_data['RSI_14']:.2f}, MACD: {latest_data['MACD_12_26_9']:.2f}.
                     
-                    Keluarkan output HANYA dalam format JSON yang valid persis seperti struktur ini:
+                    Keluarkan output HANYA dalam format JSON yang valid persis seperti struktur ini, tanpa ada teks pengantar atau penutup apapun:
                     {{
                         "rekomendasi": "BUY / SELL / HOLD",
                         "teknikal": "Tulis 2 kalimat analisis indikator teknikal dari data di atas.",
@@ -263,20 +226,15 @@ else:
                     
                     ai_data = json.loads(raw_response)
                     
-                    # REKOMENDASI UTAMA DI ATAS
                     st.markdown("<br>", unsafe_allow_html=True)
                     warna_rek = "#10B981" if "BUY" in ai_data['rekomendasi'] else "#EF4444" if "SELL" in ai_data['rekomendasi'] else "#FACC15"
                     st.markdown(f"<h2 style='text-align: center; color: {warna_rek} !important; font-size: 40px;'>🔴 KEPUTUSAN: {ai_data['rekomendasi']}</h2>", unsafe_allow_html=True)
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # GRID SYSTEM: 3 KARTU BERJAJAR HORIZONTAL
                     c1, c2, c3 = st.columns(3)
-                    with c1:
-                        st.markdown(f'<div class="ai-card"><h4>📈 Analisis Teknikal</h4><p>{ai_data["teknikal"]}</p></div>', unsafe_allow_html=True)
-                    with c2:
-                        st.markdown(f'<div class="ai-card"><h4>🌍 Faktor Fundamental</h4><p>{ai_data["fundamental"]}</p></div>', unsafe_allow_html=True)
-                    with c3:
-                        st.markdown(f'<div class="ai-card"><h4>⚖️ Dasar Keputusan</h4><p>{ai_data["alasan_keputusan"]}</p></div>', unsafe_allow_html=True)
+                    with c1: st.markdown(f'<div class="ai-card"><h4>📈 Analisis Teknikal</h4><p>{ai_data["teknikal"]}</p></div>', unsafe_allow_html=True)
+                    with c2: st.markdown(f'<div class="ai-card"><h4>🌍 Faktor Fundamental</h4><p>{ai_data["fundamental"]}</p></div>', unsafe_allow_html=True)
+                    with c3: st.markdown(f'<div class="ai-card"><h4>⚖️ Dasar Keputusan</h4><p>{ai_data["alasan_keputusan"]}</p></div>', unsafe_allow_html=True)
 
                 except Exception as e:
                     st.error(f"Terjadi kesalahan saat mengurai data AI. Detail: {e}")
