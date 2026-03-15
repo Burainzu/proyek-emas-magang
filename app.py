@@ -10,33 +10,39 @@ from bs4 import BeautifulSoup
 # 1. KONFIGURASI HALAMAN (Ikon Bank)
 st.set_page_config(page_title="BSI Gold Analytics", page_icon="🏦", layout="wide")
 
-# 2. INJEKSI CUSTOM CSS (TEMA BANK BSI PREMIUM)
+# 2. INJEKSI CUSTOM CSS (TEMA BANK BSI PREMIUM GRADIENT)
 st.markdown("""
 <style>
-    /* --- MENGUBAH BACKGROUND UTAMA & SIDEBAR --- */
-    /* Background area utama aplikasi */
+    /* --- MENGUBAH BACKGROUND UTAMA & SIDEBAR MENJADI GRADIENT BSI --- */
+    
+    /* Background area utama aplikasi (Gradient Navy ke Dark Tosca BSI) */
     .stApp {
-        background-color: #06121E !important; /* Warna Navy sangat gelap eksklusif */
-        /* Jika ingin pakai gambar background tipis, hapus // di bawah ini dan masukkan URL gambar */
-        /* background-image: url("URL_GAMBAR_PATTERN_BSI_DI_SINI"); */
-        /* background-size: cover; */
+        background: linear-gradient(135deg, #06121E 0%, #004D4A 100%) !important;
+        background-attachment: fixed !important; /* Menjaga gradient tetap mulus saat di-scroll */
     }
     
-    /* Background area Sidebar */
+    /* Background area Sidebar (Gradient Navy ke Deep Tosca) */
     [data-testid="stSidebar"] {
-        background-color: #0A1929 !important; /* Navy sedikit lebih terang untuk sidebar */
+        background: linear-gradient(180deg, #0A1929 0%, #00312F 100%) !important;
         border-right: 1px solid #00A39E; /* Garis batas Tosca BSI */
+    }
+
+    /* Membuat header atas Streamlit transparan agar menyatu dengan gradient */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
     }
 
     /* --- WARNA TEKS & ELEMEN LAINNYA --- */
     /* Judul Utama */
-    h1 { color: #00A39E !important; font-weight: 800; letter-spacing: -1px; }
+    h1 { color: #00A39E !important; font-weight: 800; letter-spacing: -1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
     h2, h3 { color: #E2E8F0 !important; }
     
-    /* Kartu Metrik Atas */
+    /* Kartu Metrik Atas (Dibuat agak transparan/Glassmorphism agar gradient terlihat) */
     div[data-testid="metric-container"] {
-        background-color: #112236; /* Background kartu disesuaikan */
-        border: 1px solid #1E3A5F;
+        background: rgba(17, 34, 54, 0.7) !important; 
+        backdrop-filter: blur(10px); /* Efek kaca kekinian */
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 163, 158, 0.3);
         padding: 15px 20px;
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
@@ -45,23 +51,26 @@ st.markdown("""
     div[data-testid="metric-container"]:hover {
         transform: translateY(-5px);
         border-color: #F26522; /* Border Oranye BSI saat di-hover */
+        background: rgba(17, 34, 54, 0.9) !important;
     }
     
-    /* Kartu Analisis AI */
+    /* Kartu Analisis AI (Glassmorphism) */
     .ai-card {
-        background-color: #0A1929;
+        background: rgba(10, 25, 41, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         border: 1px solid #00A39E; /* Border Tosca BSI */
         padding: 20px;
         border-radius: 10px;
         height: 100%;
-        box-shadow: 0 4px 10px rgba(0, 163, 158, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 163, 158, 0.15);
     }
     .ai-card h4 { 
         color: #F26522; /* Judul sub-kartu Oranye BSI */
         margin-top: 0; 
         margin-bottom: 15px; 
         font-size: 18px; 
-        border-bottom: 1px solid #1E3A5F; 
+        border-bottom: 1px solid rgba(0, 163, 158, 0.3); 
         padding-bottom: 10px;
     }
     .ai-card p { color: #CBD5E1; font-size: 14px; line-height: 1.6; }
@@ -73,18 +82,15 @@ st.markdown("""
         font-weight: bold;
         border: none;
         border-radius: 8px;
-        padding: 10px 24px;
+        padding: 12px 24px;
         width: 100%;
         box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3);
         transition: all 0.3s ease;
     }
     div.stButton > button:first-child:hover {
         transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(242, 101, 34, 0.5);
+        box-shadow: 0 6px 20px rgba(242, 101, 34, 0.6);
     }
-    
-    /* Menghilangkan background abu-abu default dari block code */
-    pre { background-color: transparent !important; }
 </style>
 """, unsafe_allow_html=True)
 
