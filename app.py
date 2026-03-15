@@ -116,7 +116,22 @@ with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bank_Syariah_Indonesia.svg/1024px-Bank_Syariah_Indonesia.svg.png", width=150)
     st.markdown("### ⚙️ Konfigurasi Mesin")
     api_key = st.text_input("🔐 Gemini API Key", type="password")
+    
+    st.markdown("### 📊 Parameter Chart")
     timeframe_option = st.selectbox("Pilih Time Frame Data:", ("Harian (1d)", "Mingguan (1wk)", "Bulanan (1mo)"))
+
+    # --- FITUR BARU: MINI CONTENT WEB LOGAM MULIA ---
+    st.markdown("---")
+    st.markdown("### 🥇 Live Web Logam Mulia")
+    
+    # Memanggil modul components bawaan Streamlit untuk iFrame
+    import streamlit.components.v1 as components
+    
+    # Membuat box iframe dengan tinggi 400px dan bisa di-scroll
+    components.iframe("https://www.logammulia.com/id/grafik-harga-emas", height=400, scrolling=True)
+    
+    # Tombol cadangan jika iFrame diblokir oleh sistem keamanan Logam Mulia
+    st.markdown("<div style='text-align: center; margin-top: 10px;'><a href='https://www.logammulia.com/id/grafik-harga-emas' target='_blank' style='text-decoration: none; color: #F26522; font-size: 13px; font-weight: bold;'>🔗 Buka Full Layar di Tab Baru</a></div>", unsafe_allow_html=True)
 
 interval_map = {"Harian (1d)": "1d", "Mingguan (1wk)": "1wk", "Bulanan (1mo)": "1mo"}
 selected_interval = interval_map[timeframe_option]
