@@ -131,7 +131,7 @@ with st.sidebar:
     components.iframe("https://www.logammulia.com/id/grafik-harga-emas", height=400, scrolling=True)
     
     # Tombol cadangan jika iFrame diblokir oleh sistem keamanan Logam Mulia
-    st.markdown("<div style='text-align: center; margin-top: 10px;'><a href='https://www.logammulia.com/id/grafik-harga-emas' target='_blank' style='text-decoration: none; color: #F26522; font-size: 13px; font-weight: bold;'>🔗 Buka Full Layar di Tab Baru</a></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; margin-top: 10px;'><a href='https://www.logammulia.com/id/grafik-harga-emas' target='_blank' style='text-decoration: none; color: #F26522; font-size: 13px; font-weight: bold;'>🔗 Cek harga emas ANTAM secara LIVE!</a></div>", unsafe_allow_html=True)
 
 interval_map = {"Harian (1d)": "1d", "Mingguan (1wk)": "1wk", "Bulanan (1mo)": "1mo"}
 selected_interval = interval_map[timeframe_option]
