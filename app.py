@@ -117,6 +117,34 @@ def get_market_news():
     except Exception as e:
         return ["Gagal menarik berita langsung. Server sedang sibuk.", "Gunakan analisis teknikal sebagai acuan utama hari ini."]
 
+# FUNGSI MENGAMBIL HARGA ASLI ANTAM DENGAN FALLBACK ESTIMASI
+@st.cache_data(ttl=3600)
+def get_harga_antam_asli(estimasi_cadangan):
+    url = "https://www.logammulia.com/id/harga-emas-hari-ini"
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Mencari tabel harga sesuai kodemu
+        table = soup.find('table', class_='table-price')
+        if table:
+            first_row = table.find_all('tr')[1] 
+            cols = first_row.find_all('td')
+            harga_beli_str = cols[1].text.strip()
+            
+            # Membersihkan teks "Rp 1.250.000" menjadi angka murni 1250000
+            import re
+            harga_bersih = int(re.sub(r'[^0-9]', '', harga_beli_str))
+            
+            return harga_bersih, "Harga Asli ANTAM"
+            
+    except Exception as e:
+        pass # Abaikan error jika diblokir, lanjut ke return bawah
+        
+    # Jika web scraping gagal/diblokir, kembalikan nilai estimasi cadangan
+    return estimasi_cadangan, "Harga Estimasi Sistem"
+
 # 4. SIDEBAR PENGATURAN
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bank_Syariah_Indonesia.svg/1024px-Bank_Syariah_Indonesia.svg.png", width=150)
@@ -184,6 +212,10 @@ if df.empty:
 else:
     latest_data = df.iloc[-1]
     
+    # --- MENJALANKAN FUNGSI HARGA ASLI ---
+    estimasi_harga = latest_data['Close_Antam_IDR']
+    harga_antam_final, status_harga = get_harga_antam_asli(estimasi_harga)
+    
     # Menampilkan Berita Market
     st.info("📰 **Kilas Berita Pasar Hari Ini:**")
     berita = get_market_news()
@@ -193,22 +225,15 @@ else:
     # KARTU METRIK
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.metric("XAU/USD (Dunia)", f"${latest_data['Close']:,.2f}")
-    with col2: st.metric("Estimasi ANTAM", f"Rp {latest_data['Close_Antam_IDR']:,.0f}")
+    with col2: st.metric(f"ANTAM ({status_harga})", f"Rp {harga_antam_final:,.0f}") # Labelnya akan berubah dinamis
     with col3: st.metric("RSI (14)", f"{latest_data['RSI_14']:.2f}")
     with col4: st.metric("MACD Momentum", f"{latest_data['MACD_12_26_9']:.2f}")
 
     # CHART PLOTLY DENGAN WARNA BSI
     st.subheader("📈 Analisis Pergerakan Harga")
-    fig = go.Figure()
-    fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='XAU/USD'))
-    # Garis SMA menggunakan warna BSI
-    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], mode='lines', name='SMA 20 (Cepat)', line=dict(color='#00A39E', width=2))) # Tosca
-    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_50'], mode='lines', name='SMA 50 (Lambat)', line=dict(color='#F26522', width=2))) # Oranye
-    
-    fig.update_layout(xaxis_rangeslider_visible=False, height=450, template="plotly_dark", margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig, use_container_width=True)
+    # ... (Biarkan kode grafik figure Plotly tetap seperti milikmu) ...
 
-    # INTEGRASI AI BERBASIS JSON & GRID SYSTEM
+    # --- DI BAGIAN BAWAH, UPDATE PROMPT AI ---
     st.markdown("---")
     
     if st.button("Generate Analisis AI & Sinyal Trading (BSI-Mode)"):
@@ -220,9 +245,9 @@ else:
                     client = genai.Client(api_key=api_key)
                     prompt = f"""
                     Anda adalah analis kuantitatif senior di Bank Syariah Indonesia. Evaluasi data Emas ini:
-                    Harga: ${latest_data['Close']:.2f}, RSI: {latest_data['RSI_14']:.2f}, MACD: {latest_data['MACD_12_26_9']:.2f}.
+                    Harga Dunia: ${latest_data['Close']:.2f}, Harga ANTAM: Rp {harga_antam_final:,.0f}, RSI: {latest_data['RSI_14']:.2f}, MACD: {latest_data['MACD_12_26_9']:.2f}.
                     
-                    Keluarkan output HANYA dalam format JSON yang valid persis seperti struktur ini, tanpa ada teks pengantar atau penutup apapun:
+                    Keluarkan output HANYA dalam format JSON yang valid persis seperti struktur ini:
                     {{
                         "rekomendasi": "BUY / SELL / HOLD",
                         "teknikal": "Tulis 2 kalimat analisis indikator teknikal dari data di atas.",
